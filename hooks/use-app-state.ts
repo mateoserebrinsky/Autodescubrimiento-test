@@ -121,18 +121,15 @@ function reducer(state: AppState, action: Action): AppState {
     
     case 'SELECT_WINNER': {
       const { champion, remainingChallengers, scores } = state.section1;
-      const loser = action.winner === champion ? remainingChallengers[0] : champion;
       const newChampion = action.winner;
       
       const newScores = { ...scores };
       newScores[newChampion] = (newScores[newChampion] || 0) + 1;
       
+      // Remove the challenger that just competed (loser is eliminated, not recycled)
       const newChallengers = remainingChallengers.slice(1);
-      if (loser && loser !== newChampion) {
-        newChallengers.push(loser);
-      }
       
-      // Check if area is complete
+      // Check if area is complete (no more challengers)
       if (newChallengers.length === 0) {
         const rankings = Object.entries(newScores)
           .map(([talent, wins]) => ({ talent, wins }))
