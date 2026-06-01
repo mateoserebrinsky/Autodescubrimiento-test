@@ -23,6 +23,7 @@ export interface AreaResult {
   rankings: TalentScore[];
   skipped: boolean;
   skipReasons?: string[];
+  skipText?: string;
 }
 
 export interface AutobiographyAnswers {
@@ -53,6 +54,7 @@ export interface AppState {
     remainingChallengers: string[];
     scores: Record<string, number>;
     areaResults: AreaResult[];
+    showingIntro: boolean;
     showingLeaderboard: boolean;
     showingSkipOptions: boolean;
     selectedSkipReasons: string[];

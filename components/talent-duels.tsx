@@ -1,240 +1,472 @@
 'use client';
 
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Header } from '@/components/header';
-import { Badge } from '@/components/ui/badge';
-import { Trophy, SkipForward, Check, X } from 'lucide-react';
 import { TALENT_AREAS, SKIP_REASONS } from '@/lib/data';
 import type { AppState } from '@/lib/types';
+import {
+  ArrowLeftRight,
+  ThumbsUp,
+  TrendingUp,
+  List,
+  SkipForward,
+} from 'lucide-react';
+
+// ── Intro screen ──────────────────────────────────────────────
+
+const INTRO_ITEMS = [
+  {
+    Icon: ArrowLeftRight,
+    text: 'En cada ronda vas a ver dos actividades o talentos enfrentados.',
+  },
+  {
+    Icon: ThumbsUp,
+    text: 'Elegí la que más te representa o en la que te sentís más capaz.',
+  },
+  {
+    Icon: TrendingUp,
+    text: 'La ganadora sigue compitiendo contra otras. Cuantas más veces gane, más alta será su posición en el ranking de esa área.',
+  },
+  {
+    Icon: List,
+    text: 'Al final de cada área vas a ver un resumen con tus talentos más destacados.',
+  },
+  {
+    Icon: SkipForward,
+    text: 'Si un área no te interesa para nada, podés omitirla.',
+  },
+];
+
+function DuelIntro({ onStart }: { onStart: () => void }) {
+  return (
+    <>
+      <Header currentSection={1} />
+      <main className="min-h-screen pt-24 pb-8 px-4">
+        <div className="mx-auto max-w-md pt-4 space-y-5">
+          <h2 className="text-2xl font-bold text-foreground text-center">
+            ¿Cómo funciona esta sección?
+          </h2>
+
+          <div className="space-y-3">
+            {INTRO_ITEMS.map(({ Icon, text }, i) => (
+              <div
+                key={i}
+                className="flex gap-3 items-start bg-card border border-border rounded-xl p-4 shadow-sm"
+              >
+                <div className="shrink-0 w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Icon className="w-5 h-5 text-primary" />
+                </div>
+                <p className="text-sm text-foreground leading-relaxed pt-1.5">{text}</p>
+              </div>
+            ))}
+          </div>
+
+          <button
+            onClick={onStart}
+            className="w-full rounded-lg bg-primary px-4 py-3.5 text-base font-semibold text-primary-foreground transition-all hover:brightness-105 active:scale-[0.98]"
+          >
+            ¡Empezar!
+          </button>
+        </div>
+      </main>
+    </>
+  );
+}
+
+// ── Talent card ───────────────────────────────────────────────
+
+type CardState = 'idle' | 'win' | 'lose';
+
+interface TalentCardProps {
+  role: 'favorite' | 'challenger';
+  talent: string;
+  cardState: CardState;
+  onDecide: (kind: 'mas' | 'menos') => void;
+}
+
+function TalentCard({ role, talent, cardState, onDecide }: TalentCardProps) {
+  const isFav = role === 'favorite';
+
+  return (
+    <div
+      className={[
+        'relative flex flex-1 flex-col items-center justify-center gap-4 rounded-xl border bg-card p-5 text-center transition-all duration-500 min-h-[140px]',
+        cardState === 'win'
+          ? 'scale-[1.015] border-primary/50 shadow-md'
+          : cardState === 'lose'
+          ? 'scale-[0.97] opacity-40'
+          : 'border-border shadow-sm',
+      ].join(' ')}
+    >
+      {/* Checkmark badge */}
+      <div
+        className={[
+          'absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition-all duration-300',
+          cardState === 'win' ? 'scale-100 opacity-100' : 'scale-50 opacity-0',
+        ].join(' ')}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="14"
+          height="14"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
+      </div>
+
+      {/* Tag */}
+      <div className="flex items-center gap-1.5">
+        {isFav && (
+          <svg
+            viewBox="0 0 24 24"
+            width="12"
+            height="12"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="text-muted-foreground"
+          >
+            <path d="m3 11 2-6 4 4 3-6 3 6 4-4 2 6" />
+            <path d="M5 21h14" />
+          </svg>
+        )}
+        <span
+          className={[
+            'text-[10.5px] font-semibold uppercase tracking-widest',
+            isFav ? 'text-muted-foreground' : 'text-primary',
+          ].join(' ')}
+        >
+          {isFav ? 'Tu favorito' : 'Nueva opción'}
+        </span>
+      </div>
+
+      {/* Talent name */}
+      <p className="text-xl font-bold leading-tight text-foreground">{talent}</p>
+
+      {/* Action buttons (challenger only) */}
+      {!isFav && (
+        <div className="flex w-full max-w-xs flex-col gap-2">
+          <button
+            disabled={cardState !== 'idle'}
+            onClick={() => onDecide('mas')}
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-all hover:brightness-105 active:scale-[0.98] disabled:opacity-50"
+          >
+            Me gusta más
+            <svg
+              viewBox="0 0 24 24"
+              width="15"
+              height="15"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="m18 15-6-6-6 6" />
+            </svg>
+          </button>
+          <button
+            disabled={cardState !== 'idle'}
+            onClick={() => onDecide('menos')}
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-secondary px-4 py-3 text-sm font-semibold text-secondary-foreground transition-all hover:bg-muted active:scale-[0.98] disabled:opacity-50"
+          >
+            Me gusta menos
+            <svg
+              viewBox="0 0 24 24"
+              width="15"
+              height="15"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Skip modal ────────────────────────────────────────────────
+
+interface SkipModalProps {
+  selectedReasons: string[];
+  skipText: string;
+  onToggleReason: (r: string) => void;
+  onSkipTextChange: (t: string) => void;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+function SkipModal({
+  selectedReasons,
+  skipText,
+  onToggleReason,
+  onSkipTextChange,
+  onConfirm,
+  onCancel,
+}: SkipModalProps) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-foreground/20 backdrop-blur-sm px-4">
+      <div className="w-full max-w-md bg-card rounded-t-2xl sm:rounded-2xl border border-border shadow-xl overflow-hidden">
+        <div className="p-5 space-y-4">
+          <div>
+            <h3 className="text-lg font-semibold text-foreground">
+              ¿Por qué omitís esta área?
+            </h3>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Podés elegir más de una opción.
+            </p>
+          </div>
+
+          {/* Reason chips */}
+          <div className="flex flex-wrap gap-2">
+            {SKIP_REASONS.map((reason) => {
+              const selected = selectedReasons.includes(reason);
+              return (
+                <button
+                  key={reason}
+                  onClick={() => onToggleReason(reason)}
+                  className={[
+                    'px-3 py-1.5 rounded-full text-sm font-medium border transition-all',
+                    selected
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-secondary text-secondary-foreground border-border hover:bg-muted',
+                  ].join(' ')}
+                >
+                  {reason}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Free text */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-foreground">
+              ¿Querés agregar algo más?
+            </label>
+            <textarea
+              value={skipText}
+              onChange={(e) => onSkipTextChange(e.target.value)}
+              placeholder="Contanos con tus palabras..."
+              rows={3}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3">
+            <button
+              onClick={onCancel}
+              className="flex-1 rounded-lg border border-border bg-secondary px-4 py-2.5 text-sm font-semibold text-secondary-foreground transition-colors hover:bg-muted"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={onConfirm}
+              className="flex-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:brightness-105 active:scale-[0.98]"
+            >
+              Omitir área
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────
 
 interface TalentDuelsProps {
   state: AppState['section1'];
   onSelectWinner: (winner: string) => void;
   onNextArea: () => void;
+  onDismissIntro: () => void;
   onToggleSkipOptions: () => void;
   onToggleSkipReason: (reason: string) => void;
-  onConfirmSkip: () => void;
+  onConfirmSkip: (skipText: string) => void;
 }
 
 export function TalentDuels({
   state,
   onSelectWinner,
   onNextArea,
+  onDismissIntro,
   onToggleSkipOptions,
   onToggleSkipReason,
   onConfirmSkip,
 }: TalentDuelsProps) {
   const currentArea = TALENT_AREAS[state.currentAreaIndex];
   const totalDuels = currentArea.talents.length - 1;
-  const currentDuel = Math.min(state.currentDuelIndex + 1, totalDuels);
 
-  if (state.showingLeaderboard) {
-    const rankings = state.areaResults[state.areaResults.length - 1]?.rankings || [];
-    
-    return (
-      <>
-        <Header currentSection={1} />
-        <main className="min-h-screen pt-24 pb-24 px-4">
-          <div className="max-w-[480px] md:max-w-[600px] mx-auto space-y-6">
-            <div className="text-center space-y-2">
-              <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-accent/10">
-                <Trophy className="w-7 h-7 text-accent" />
-              </div>
-              <h2 className="text-xl font-semibold text-foreground">
-                Ranking: {currentArea.name}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Tus talentos ordenados por victorias
-              </p>
-            </div>
+  const [favoriteSlot, setFavoriteSlot] = useState<'top' | 'bottom'>('top');
+  const [choice, setChoice] = useState<'mas' | 'menos' | null>(null);
+  const [skipText, setSkipText] = useState('');
+  const lock = useRef(false);
 
-            <Card className="p-4 space-y-2">
-              {rankings.map((item, index) => (
-                <div
-                  key={item.talent}
-                  className={`flex items-center justify-between p-3 rounded-xl transition-colors ${
-                    index === 0 
-                      ? 'bg-accent/10 border border-accent/20' 
-                      : index < 3 
-                        ? 'bg-secondary' 
-                        : 'bg-muted/50'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-semibold ${
-                      index === 0 
-                        ? 'bg-accent text-accent-foreground' 
-                        : 'bg-muted text-muted-foreground'
-                    }`}>
-                      {index + 1}
-                    </span>
-                    <span className={`text-sm ${index === 0 ? 'font-medium' : ''}`}>
-                      {item.talent}
-                    </span>
-                  </div>
-                  <Badge variant={index === 0 ? 'default' : 'secondary'} className="text-xs">
-                    {item.wins} {item.wins === 1 ? 'victoria' : 'victorias'}
-                  </Badge>
-                </div>
-              ))}
-            </Card>
+  // Reset slot state when a new area starts
+  useEffect(() => {
+    setFavoriteSlot('top');
+    setChoice(null);
+    lock.current = false;
+  }, [state.currentAreaIndex]);
 
-            <Button onClick={onNextArea} className="w-full" size="lg">
-              {state.currentAreaIndex < TALENT_AREAS.length - 1 
-                ? 'Siguiente área'
-                : 'Continuar a Sección 2'
-              }
-            </Button>
-          </div>
-        </main>
-      </>
-    );
-  }
+  // Clear skip text when the modal closes
+  useEffect(() => {
+    if (!state.showingSkipOptions) setSkipText('');
+  }, [state.showingSkipOptions]);
 
-  if (state.showingSkipOptions) {
-    return (
-      <>
-        <Header currentSection={1} />
-        <main className="min-h-screen pt-24 pb-24 px-4">
-          <div className="max-w-[480px] md:max-w-[600px] mx-auto space-y-6">
-            <div className="text-center space-y-2">
-              <h2 className="text-xl font-semibold text-foreground">
-                ¿Por qué querés omitir esta área?
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Seleccioná los motivos (podés elegir varios)
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-2 justify-center">
-              {SKIP_REASONS.map((reason) => {
-                const isSelected = state.selectedSkipReasons.includes(reason);
-                return (
-                  <button
-                    key={reason}
-                    onClick={() => onToggleSkipReason(reason)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                      isSelected
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                    }`}
-                  >
-                    {isSelected && <Check className="w-4 h-4 inline mr-1" />}
-                    {reason}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={onToggleSkipOptions}
-                className="flex-1"
-              >
-                <X className="w-4 h-4 mr-1" />
-                Cancelar
-              </Button>
-              <Button
-                onClick={onConfirmSkip}
-                disabled={state.selectedSkipReasons.length === 0}
-                className="flex-1"
-              >
-                Confirmar
-              </Button>
-            </div>
-          </div>
-        </main>
-      </>
-    );
-  }
+  // Auto-advance past the (removed) leaderboard screen
+  useEffect(() => {
+    if (state.showingLeaderboard) onNextArea();
+  }, [state.showingLeaderboard, onNextArea]);
 
   const challenger = state.remainingChallengers[0];
+  const challengerSlot: 'top' | 'bottom' = favoriteSlot === 'top' ? 'bottom' : 'top';
+
+  const decide = useCallback(
+    (kind: 'mas' | 'menos') => {
+      if (lock.current || !state.champion || !challenger) return;
+      lock.current = true;
+      setChoice(kind);
+
+      const winner = kind === 'mas' ? challenger : state.champion;
+      const winnerSlot = kind === 'mas' ? challengerSlot : favoriteSlot;
+
+      setTimeout(() => {
+        setFavoriteSlot(winnerSlot);
+        setChoice(null);
+        lock.current = false;
+        onSelectWinner(winner);
+      }, 680);
+    },
+    [state.champion, challenger, favoriteSlot, challengerSlot, onSelectWinner],
+  );
+
+  // ── Intro screen ──
+  if (state.showingIntro) {
+    return <DuelIntro onStart={onDismissIntro} />;
+  }
+
+  // ── Transitioning (auto-advancing leaderboard) ──
+  if (state.showingLeaderboard || !state.champion || !challenger) {
+    return (
+      <>
+        <Header currentSection={1} />
+        <main className="min-h-screen" />
+      </>
+    );
+  }
+
+  const favState: CardState =
+    choice === 'menos' ? 'win' : choice === 'mas' ? 'lose' : 'idle';
+  const chalState: CardState =
+    choice === 'mas' ? 'win' : choice === 'menos' ? 'lose' : 'idle';
+
+  const favCard = (
+    <TalentCard
+      role="favorite"
+      talent={state.champion}
+      cardState={favState}
+      onDecide={decide}
+    />
+  );
+  const chalCard = (
+    <TalentCard
+      role="challenger"
+      talent={challenger}
+      cardState={chalState}
+      onDecide={decide}
+    />
+  );
 
   return (
     <>
       <Header currentSection={1} />
-      <main className="min-h-screen pt-24 pb-24 px-4">
-        <div className="max-w-[480px] md:max-w-[600px] mx-auto space-y-6">
-          <div className="text-center space-y-2">
-            <Badge variant="secondary" className="mb-2">
+
+      <main className="flex flex-col pt-24" style={{ height: '100dvh' }}>
+        <div className="flex flex-1 flex-col min-h-0 mx-auto w-full max-w-md">
+          {/* Area label + prompt */}
+          <div className="shrink-0 px-4 pt-5 pb-3 text-center">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-primary">
               {currentArea.name}
-            </Badge>
-            <h2 className="text-lg font-semibold text-foreground">
-              ¿En qué te sentís MÁS capaz?
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              Duelo {currentDuel} de {totalDuels}
+            </p>
+            <p className="mt-1 text-base font-semibold text-foreground">
+              ¿Qué te interesa más?
             </p>
           </div>
 
-          {/* Duel Cards */}
-          <div className="flex flex-col md:flex-row gap-3 md:gap-4">
-            {/* Champion */}
-            <button
-              onClick={() => onSelectWinner(state.champion!)}
-              className="flex-1 group"
-            >
-              <Card className="p-6 h-full transition-all hover:shadow-lg hover:border-primary/50 group-focus:ring-2 group-focus:ring-primary group-focus:ring-offset-2">
-                <div className="flex flex-col items-center justify-center min-h-[100px] text-center">
-                  <span className="text-base font-medium text-foreground">
-                    {state.champion}
-                  </span>
-                </div>
-              </Card>
-            </button>
+          {/* Duel stack */}
+          <div className="relative flex flex-1 flex-col gap-3 min-h-0 px-4">
+            {favoriteSlot === 'top' ? favCard : chalCard}
 
-            {/* VS indicator */}
-            <div className="flex items-center justify-center py-2 md:py-0">
-              <span className="px-3 py-1 rounded-full bg-muted text-muted-foreground text-sm font-bold">
-                VS
+            {/* VS badge */}
+            <div
+              className={[
+                'pointer-events-none absolute left-1/2 top-1/2 z-10 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card shadow-sm transition-all duration-300',
+                choice ? 'scale-75 opacity-0' : 'scale-100 opacity-100',
+              ].join(' ')}
+            >
+              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                vs
               </span>
             </div>
 
-            {/* Challenger */}
-            <button
-              onClick={() => onSelectWinner(challenger)}
-              className="flex-1 group"
-            >
-              <Card className="p-6 h-full transition-all hover:shadow-lg hover:border-primary/50 group-focus:ring-2 group-focus:ring-primary group-focus:ring-offset-2">
-                <div className="flex flex-col items-center justify-center min-h-[100px] text-center">
-                  <span className="text-base font-medium text-foreground">
-                    {challenger}
-                  </span>
-                </div>
-              </Card>
-            </button>
+            {favoriteSlot === 'top' ? chalCard : favCard}
           </div>
 
-          {/* Progress dots */}
-          <div className="flex justify-center gap-1.5">
-            {Array.from({ length: totalDuels }).map((_, i) => (
-              <div
-                key={i}
-                className={`w-2 h-2 rounded-full transition-colors ${
-                  i < state.currentDuelIndex
-                    ? 'bg-primary'
-                    : i === state.currentDuelIndex
-                      ? 'bg-primary/50'
-                      : 'bg-muted'
-                }`}
-              />
-            ))}
-          </div>
-
-          {/* Skip button */}
-          <div className="text-center">
+          {/* Footer: progress dots + skip */}
+          <div className="shrink-0 flex flex-col items-center gap-2 border-t border-border bg-card px-4 py-3">
+            <div className="flex gap-1.5">
+              {Array.from({ length: totalDuels }).map((_, i) => (
+                <div
+                  key={i}
+                  className={[
+                    'h-2 rounded-full transition-all duration-300',
+                    i < state.currentDuelIndex
+                      ? 'w-2 bg-primary/55'
+                      : i === state.currentDuelIndex
+                      ? 'w-5 bg-primary'
+                      : 'w-2 bg-secondary',
+                  ].join(' ')}
+                />
+              ))}
+            </div>
+            <span className="text-[11.5px] font-medium text-muted-foreground">
+              Duelo {state.currentDuelIndex + 1} de {totalDuels}
+            </span>
             <button
               onClick={onToggleSkipOptions}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
+              className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground mt-0.5"
             >
-              <SkipForward className="w-4 h-4" />
+              <SkipForward className="w-3.5 h-3.5" />
               Omitir esta área
             </button>
           </div>
         </div>
       </main>
+
+      {/* Skip modal — rendered on top of the duel screen */}
+      {state.showingSkipOptions && (
+        <SkipModal
+          selectedReasons={state.selectedSkipReasons}
+          skipText={skipText}
+          onToggleReason={onToggleSkipReason}
+          onSkipTextChange={setSkipText}
+          onConfirm={() => onConfirmSkip(skipText)}
+          onCancel={onToggleSkipOptions}
+        />
+      )}
     </>
   );
 }

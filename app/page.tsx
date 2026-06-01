@@ -28,6 +28,10 @@ export default function Home() {
     dispatch({ type: 'NEXT_AREA' });
   };
 
+  const handleDismissIntro = () => {
+    dispatch({ type: 'DISMISS_INTRO' });
+  };
+
   const handleToggleSkipOptions = () => {
     dispatch({ type: 'TOGGLE_SKIP_OPTIONS' });
   };
@@ -36,8 +40,8 @@ export default function Home() {
     dispatch({ type: 'TOGGLE_SKIP_REASON', reason });
   };
 
-  const handleConfirmSkip = () => {
-    dispatch({ type: 'CONFIRM_SKIP' });
+  const handleConfirmSkip = (skipText: string) => {
+    dispatch({ type: 'CONFIRM_SKIP', skipText });
   };
 
   // Section 2 handlers
@@ -76,6 +80,7 @@ export default function Home() {
           state={state.section1}
           onSelectWinner={handleSelectWinner}
           onNextArea={handleNextArea}
+          onDismissIntro={handleDismissIntro}
           onToggleSkipOptions={handleToggleSkipOptions}
           onToggleSkipReason={handleToggleSkipReason}
           onConfirmSkip={handleConfirmSkip}
