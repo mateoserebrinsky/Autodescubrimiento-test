@@ -32,7 +32,7 @@ export function FooterNav({
             variant="outline"
             onClick={onPrevious}
             disabled={previousDisabled}
-            className="flex-1 sm:flex-none sm:min-w-[140px]"
+            className="flex-1 sm:flex-none sm:min-w-[140px] h-11"
           >
             <ChevronLeft className="h-4 w-4 mr-1" />
             {previousLabel}
@@ -44,7 +44,7 @@ export function FooterNav({
           <Button
             onClick={onNext}
             disabled={nextDisabled}
-            className="flex-1 sm:flex-none sm:min-w-[140px]"
+            className="flex-1 sm:flex-none sm:min-w-[160px] h-11 text-base font-semibold"
           >
             {nextLabel}
             <ChevronRight className="h-4 w-4 ml-1" />

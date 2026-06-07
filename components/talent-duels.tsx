@@ -120,32 +120,14 @@ function TalentCard({ role, talent, cardState, onDecide }: TalentCardProps) {
       </div>
 
       {/* Tag */}
-      <div className="flex items-center gap-1.5">
-        {isFav && (
-          <svg
-            viewBox="0 0 24 24"
-            width="12"
-            height="12"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="text-muted-foreground"
-          >
-            <path d="m3 11 2-6 4 4 3-6 3 6 4-4 2 6" />
-            <path d="M5 21h14" />
-          </svg>
-        )}
-        <span
-          className={[
-            'text-[10.5px] font-semibold uppercase tracking-widest',
-            isFav ? 'text-muted-foreground' : 'text-primary',
-          ].join(' ')}
-        >
-          {isFav ? 'Tu favorito' : 'Nueva opción'}
-        </span>
-      </div>
+      <span
+        className={[
+          'text-[10.5px] font-semibold uppercase tracking-widest',
+          isFav ? 'text-muted-foreground' : 'text-primary',
+        ].join(' ')}
+      >
+        {isFav ? 'Tu favorito' : 'Nueva opción'}
+      </span>
 
       {/* Talent name */}
       <p className="text-xl font-bold leading-tight text-foreground">{talent}</p>
@@ -402,10 +384,10 @@ export function TalentDuels({
         <div className="flex flex-1 flex-col min-h-0 mx-auto w-full max-w-md">
           {/* Area label + prompt */}
           <div className="shrink-0 px-4 pt-5 pb-3 text-center">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-primary">
+            <h2 className="text-2xl font-bold text-foreground leading-tight">
               {currentArea.name}
-            </p>
-            <p className="mt-1 text-base font-semibold text-foreground">
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
               ¿Qué te interesa más?
             </p>
           </div>
@@ -430,9 +412,9 @@ export function TalentDuels({
           </div>
 
           {/* Footer: progress + skip */}
-          <div className="shrink-0 flex flex-col gap-3 border-t border-border bg-card px-4 py-3">
+          <div className="shrink-0 flex flex-col gap-3 border-t border-border bg-card px-4 py-4">
             {/* Combined area + duel progress bar */}
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-semibold text-foreground">
                   Área {state.currentAreaIndex + 1}
@@ -452,29 +434,12 @@ export function TalentDuels({
               </div>
             </div>
 
-            {/* Within-area duel dots */}
-            <div className="flex justify-center gap-1">
-              {Array.from({ length: totalDuels }).map((_, i) => (
-                <div
-                  key={i}
-                  className={[
-                    'h-1.5 rounded-full transition-all duration-300',
-                    i < state.currentDuelIndex
-                      ? 'w-1.5 bg-primary/50'
-                      : i === state.currentDuelIndex
-                      ? 'w-4 bg-primary'
-                      : 'w-1.5 bg-secondary',
-                  ].join(' ')}
-                />
-              ))}
-            </div>
-
             {/* Skip */}
             <button
               onClick={onToggleSkipOptions}
-              className="flex items-center justify-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-secondary px-4 py-2.5 text-sm font-semibold text-secondary-foreground transition-all hover:bg-muted active:scale-[0.98]"
             >
-              <SkipForward className="w-3.5 h-3.5" />
+              <SkipForward className="w-4 h-4" />
               Omitir esta área
             </button>
           </div>
