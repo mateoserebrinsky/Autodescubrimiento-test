@@ -425,29 +425,50 @@ export function TalentDuels({
             {favoriteSlot === 'top' ? chalCard : favCard}
           </div>
 
-          {/* Footer: progress dots + skip */}
-          <div className="shrink-0 flex flex-col items-center gap-2 border-t border-border bg-card px-4 py-3">
-            <div className="flex gap-1.5">
+          {/* Footer: progress + skip */}
+          <div className="shrink-0 flex flex-col gap-3 border-t border-border bg-card px-4 py-3">
+            {/* Combined area + duel progress bar */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-foreground">
+                  Área {state.currentAreaIndex + 1}
+                  <span className="font-normal text-muted-foreground"> de {TALENT_AREAS.length}</span>
+                </span>
+                <span className="text-muted-foreground">
+                  Duelo {state.currentDuelIndex + 1} de {totalDuels}
+                </span>
+              </div>
+              <div className="h-2 rounded-full bg-secondary overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-primary transition-all duration-500 ease-out"
+                  style={{
+                    width: `${((state.currentAreaIndex + (state.currentDuelIndex / totalDuels)) / TALENT_AREAS.length) * 100}%`,
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Within-area duel dots */}
+            <div className="flex justify-center gap-1">
               {Array.from({ length: totalDuels }).map((_, i) => (
                 <div
                   key={i}
                   className={[
-                    'h-2 rounded-full transition-all duration-300',
+                    'h-1.5 rounded-full transition-all duration-300',
                     i < state.currentDuelIndex
-                      ? 'w-2 bg-primary/55'
+                      ? 'w-1.5 bg-primary/50'
                       : i === state.currentDuelIndex
-                      ? 'w-5 bg-primary'
-                      : 'w-2 bg-secondary',
+                      ? 'w-4 bg-primary'
+                      : 'w-1.5 bg-secondary',
                   ].join(' ')}
                 />
               ))}
             </div>
-            <span className="text-[11.5px] font-medium text-muted-foreground">
-              Duelo {state.currentDuelIndex + 1} de {totalDuels}
-            </span>
+
+            {/* Skip */}
             <button
               onClick={onToggleSkipOptions}
-              className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground mt-0.5"
+              className="flex items-center justify-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
             >
               <SkipForward className="w-3.5 h-3.5" />
               Omitir esta área
