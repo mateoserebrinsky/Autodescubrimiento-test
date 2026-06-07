@@ -9,7 +9,7 @@ type Action =
   | { type: 'GO_TO_WELCOME' }
   | { type: 'GO_TO_REGISTRATION' }
   | { type: 'GO_TO_FINISHED' }
-  | { type: 'SET_SESSION'; sesionId: string; userInfo: UserInfo }
+  | { type: 'SET_SESSION'; sesionId: number; userInfo: UserInfo }
   | { type: 'START_DUEL'; areaIndex: number }
   | { type: 'SELECT_WINNER'; winner: string }
   | { type: 'SHOW_LEADERBOARD' }

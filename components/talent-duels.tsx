@@ -328,8 +328,12 @@ export function TalentDuels({
 
   // Auto-advance past the (removed) leaderboard screen
   useEffect(() => {
-    if (state.showingLeaderboard) onNextArea();
-  }, [state.showingLeaderboard, onNextArea]);
+    if (state.showingLeaderboard) {
+      onNextArea();
+    }
+  // onNextArea is a stable dispatch wrapper — only re-run when showingLeaderboard changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.showingLeaderboard]);
 
   const challenger = state.remainingChallengers[0];
   const challengerSlot: 'top' | 'bottom' = favoriteSlot === 'top' ? 'bottom' : 'top';

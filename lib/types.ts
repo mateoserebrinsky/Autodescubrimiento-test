@@ -54,7 +54,7 @@ export interface ReflectionAnswers {
 export interface AppState {
   currentScreen: Screen;
   currentSection: Section;
-  sesionId: string | null;
+  sesionId: number | null;
   userInfo: UserInfo | null;
   section1: {
     currentAreaIndex: number;
