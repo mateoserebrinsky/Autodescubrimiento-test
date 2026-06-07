@@ -1,13 +1,15 @@
 'use client';
 
 import { useReducer } from 'react';
-import type { AppState, Section, AreaResult, AutobiographyAnswers, ReflectionAnswers } from '@/lib/types';
+import type { AppState, Section, AreaResult, AutobiographyAnswers, ReflectionAnswers, UserInfo } from '@/lib/types';
 import { TALENT_AREAS } from '@/lib/data';
 
 type Action =
   | { type: 'GO_TO_SECTION'; section: Section }
   | { type: 'GO_TO_WELCOME' }
+  | { type: 'GO_TO_REGISTRATION' }
   | { type: 'GO_TO_FINISHED' }
+  | { type: 'SET_SESSION'; sesionId: number; userInfo: UserInfo }
   | { type: 'START_DUEL'; areaIndex: number }
   | { type: 'SELECT_WINNER'; winner: string }
   | { type: 'SHOW_LEADERBOARD' }
@@ -26,6 +28,8 @@ type Action =
 const initialState: AppState = {
   currentScreen: 'welcome',
   currentSection: 1,
+  sesionId: null,
+  userInfo: null,
   section1: {
     currentAreaIndex: 0,
     currentDuelIndex: 0,
@@ -88,6 +92,22 @@ function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'GO_TO_WELCOME':
       return { ...initialState };
+
+    case 'GO_TO_REGISTRATION':
+      return { ...state, currentScreen: 'registration' };
+
+    case 'SET_SESSION':
+      return {
+        ...state,
+        sesionId: action.sesionId,
+        userInfo: action.userInfo,
+        currentScreen: 'section1',
+        currentSection: 1,
+        section1: {
+          ...initialState.section1,
+          showingIntro: true,
+        },
+      };
     
     case 'GO_TO_SECTION': {
       if (action.section === 1) {
