@@ -1,9 +1,16 @@
 export type Screen = 
   | 'welcome'
+  | 'registration'
   | 'section1'
   | 'section2'
   | 'section3'
   | 'finished';
+
+export interface UserInfo {
+  nombre: string;
+  apellido: string;
+  edad: string;
+}
 
 export type Section = 1 | 2 | 3;
 
@@ -47,6 +54,8 @@ export interface ReflectionAnswers {
 export interface AppState {
   currentScreen: Screen;
   currentSection: Section;
+  sesionId: string | null;
+  userInfo: UserInfo | null;
   section1: {
     currentAreaIndex: number;
     currentDuelIndex: number;
