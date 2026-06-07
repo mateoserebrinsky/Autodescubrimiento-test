@@ -12,9 +12,10 @@ type Action =
   | { type: 'SELECT_WINNER'; winner: string }
   | { type: 'SHOW_LEADERBOARD' }
   | { type: 'NEXT_AREA' }
+  | { type: 'DISMISS_INTRO' }
   | { type: 'TOGGLE_SKIP_OPTIONS' }
   | { type: 'TOGGLE_SKIP_REASON'; reason: string }
-  | { type: 'CONFIRM_SKIP' }
+  | { type: 'CONFIRM_SKIP'; skipText: string }
   | { type: 'SET_AUTOBIOGRAPHY_ANSWER'; questionId: keyof AutobiographyAnswers; answer: string }
   | { type: 'NEXT_AUTOBIOGRAPHY_QUESTION' }
   | { type: 'PREV_AUTOBIOGRAPHY_QUESTION' }
@@ -32,6 +33,7 @@ const initialState: AppState = {
     remainingChallengers: [],
     scores: {},
     areaResults: [],
+    showingIntro: false,
     showingLeaderboard: false,
     showingSkipOptions: false,
     selectedSkipReasons: [],
@@ -63,12 +65,12 @@ const initialState: AppState = {
 function initializeArea(areaIndex: number): Partial<AppState['section1']> {
   const area = TALENT_AREAS[areaIndex];
   if (!area) return {};
-  
+
   const talents = [...area.talents];
   const [champion, ...challengers] = talents;
   const scores: Record<string, number> = {};
   talents.forEach(t => scores[t] = 0);
-  
+
   return {
     currentAreaIndex: areaIndex,
     currentDuelIndex: 0,
@@ -78,6 +80,7 @@ function initializeArea(areaIndex: number): Partial<AppState['section1']> {
     showingLeaderboard: false,
     showingSkipOptions: false,
     selectedSkipReasons: [],
+    // showingIntro is intentionally NOT reset here — it only shows once per session
   };
 }
 
@@ -96,6 +99,7 @@ function reducer(state: AppState, action: Action): AppState {
             ...state.section1,
             ...initializeArea(0),
             areaResults: [],
+            showingIntro: true,
           },
         };
       }
@@ -190,6 +194,12 @@ function reducer(state: AppState, action: Action): AppState {
       };
     }
     
+    case 'DISMISS_INTRO':
+      return {
+        ...state,
+        section1: { ...state.section1, showingIntro: false },
+      };
+
     case 'TOGGLE_SKIP_OPTIONS':
       return {
         ...state,
@@ -220,6 +230,7 @@ function reducer(state: AppState, action: Action): AppState {
         rankings: [],
         skipped: true,
         skipReasons: state.section1.selectedSkipReasons,
+        skipText: action.skipText || undefined,
       };
       
       const nextIndex = state.section1.currentAreaIndex + 1;
