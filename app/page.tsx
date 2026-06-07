@@ -2,21 +2,40 @@
 
 import { useAppState } from '@/hooks/use-app-state';
 import { WelcomeScreen } from '@/components/welcome-screen';
+import { RegistrationForm } from '@/components/registration-form';
 import { TalentDuels } from '@/components/talent-duels';
 import { AutobiographySection } from '@/components/autobiography-section';
 import { ReflectionSection } from '@/components/reflection-section';
 import { FinishedScreen } from '@/components/finished-screen';
-import type { AutobiographyAnswers, ReflectionAnswers } from '@/lib/types';
+import type { AutobiographyAnswers, ReflectionAnswers, UserInfo } from '@/lib/types';
 
 export default function Home() {
   const [state, dispatch] = useAppState();
 
+  // Welcome screen: go to registration form
   const handleStart = () => {
-    dispatch({ type: 'GO_TO_SECTION', section: 1 });
+    dispatch({ type: 'GO_TO_REGISTRATION' });
   };
 
   const handleRestart = () => {
     dispatch({ type: 'GO_TO_WELCOME' });
+  };
+
+  // Registration: create user + session in Supabase, then start section 1
+  const handleRegistrationConfirm = async (userInfo: UserInfo) => {
+    const res = await fetch('/api/registro', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userInfo),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error ?? 'Error al registrar');
+    }
+
+    const { sesionId } = await res.json();
+    dispatch({ type: 'SET_SESSION', sesionId, userInfo });
   };
 
   // Section 1 handlers
@@ -24,8 +43,62 @@ export default function Home() {
     dispatch({ type: 'SELECT_WINNER', winner });
   };
 
-  const handleNextArea = () => {
+  // When section 1 finishes, save duelos to Supabase then advance to section 2
+  const handleNextArea = async () => {
+    const nextIndex = state.section1.currentAreaIndex + 1;
+    const isLastArea = nextIndex >= (await import('@/lib/data')).TALENT_AREAS.length;
+
+    if (isLastArea && state.sesionId) {
+      try {
+        await fetch('/api/duelos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sesionId: state.sesionId,
+            areaResults: state.section1.areaResults,
+          }),
+        });
+      } catch (err) {
+        console.error('[page] Error guardando duelos:', err);
+      }
+    }
+
     dispatch({ type: 'NEXT_AREA' });
+  };
+
+  const handleConfirmSkip = async (skipText: string) => {
+    const nextIndex = state.section1.currentAreaIndex + 1;
+    const talentAreas = (await import('@/lib/data')).TALENT_AREAS;
+    const isLastArea = nextIndex >= talentAreas.length;
+
+    // Dispatch skip first so areaResults is updated before we save
+    dispatch({ type: 'CONFIRM_SKIP', skipText });
+
+    if (isLastArea && state.sesionId) {
+      // Build the full results including the current skipped area
+      const currentArea = talentAreas[state.section1.currentAreaIndex];
+      const skippedResult = {
+        areaId: currentArea.id,
+        rankings: [],
+        skipped: true,
+        skipReasons: state.section1.selectedSkipReasons,
+        skipText: skipText || undefined,
+      };
+      const allResults = [...state.section1.areaResults, skippedResult];
+
+      try {
+        await fetch('/api/duelos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sesionId: state.sesionId,
+            areaResults: allResults,
+          }),
+        });
+      } catch (err) {
+        console.error('[page] Error guardando omision final:', err);
+      }
+    }
   };
 
   const handleDismissIntro = () => {
@@ -40,16 +113,30 @@ export default function Home() {
     dispatch({ type: 'TOGGLE_SKIP_REASON', reason });
   };
 
-  const handleConfirmSkip = (skipText: string) => {
-    dispatch({ type: 'CONFIRM_SKIP', skipText });
-  };
-
   // Section 2 handlers
   const handleAutobiographyAnswer = (questionId: keyof AutobiographyAnswers, answer: string) => {
     dispatch({ type: 'SET_AUTOBIOGRAPHY_ANSWER', questionId, answer });
   };
 
-  const handleAutobiographyNext = () => {
+  // When autobiography finishes, save to Supabase then advance to section 3
+  const handleAutobiographyNext = async () => {
+    const isLastQuestion = state.section2.currentQuestionIndex >= 5;
+
+    if (isLastQuestion && state.sesionId) {
+      try {
+        await fetch('/api/autobiografia', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sesionId: state.sesionId,
+            answers: state.section2.answers,
+          }),
+        });
+      } catch (err) {
+        console.error('[page] Error guardando autobiografia:', err);
+      }
+    }
+
     dispatch({ type: 'NEXT_AUTOBIOGRAPHY_QUESTION' });
   };
 
@@ -62,7 +149,26 @@ export default function Home() {
     dispatch({ type: 'SET_REFLECTION_ANSWER', questionId, answer });
   };
 
-  const handleReflectionNext = () => {
+  // When reflection finishes, save to Supabase (marks session complete) then go to finished
+  const handleReflectionNext = async () => {
+    const totalQuestions = 6;
+    const isLastQuestion = state.section3.currentQuestionIndex >= totalQuestions - 1;
+
+    if (isLastQuestion && state.sesionId) {
+      try {
+        await fetch('/api/reflexion', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sesionId: state.sesionId,
+            answers: state.section3.answers,
+          }),
+        });
+      } catch (err) {
+        console.error('[page] Error guardando reflexion:', err);
+      }
+    }
+
     dispatch({ type: 'NEXT_REFLECTION_QUESTION' });
   };
 
@@ -73,6 +179,14 @@ export default function Home() {
   switch (state.currentScreen) {
     case 'welcome':
       return <WelcomeScreen onStart={handleStart} />;
+
+    case 'registration':
+      return (
+        <RegistrationForm
+          onConfirm={handleRegistrationConfirm}
+          onBack={() => dispatch({ type: 'GO_TO_WELCOME' })}
+        />
+      );
 
     case 'section1':
       return (
