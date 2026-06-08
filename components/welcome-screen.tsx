@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sparkles, Target, BookOpen } from 'lucide-react';
+import { Sparkles, Target, BookOpen, Compass } from 'lucide-react';
 
 interface WelcomeScreenProps {
   onStart: () => void;
@@ -14,7 +14,7 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
       <div className="w-full max-w-[480px] md:max-w-[600px] space-y-6">
         <div className="text-center space-y-3">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-2">
-            <Sparkles className="w-8 h-8 text-primary" />
+            <Compass className="w-8 h-8 text-primary" />
           </div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground text-balance">
             Auto-descubrimiento y Estilos

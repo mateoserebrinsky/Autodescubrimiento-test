@@ -8,8 +8,8 @@ import {
   ArrowLeftRight,
   ThumbsUp,
   TrendingUp,
-  List,
   SkipForward,
+  Check,
 } from 'lucide-react';
 
 // ── Intro screen ──────────────────────────────────────────────
@@ -28,12 +28,8 @@ const INTRO_ITEMS = [
     text: 'La ganadora sigue compitiendo contra otras. Cuantas más veces gane, más alta será su posición en el ranking de esa área.',
   },
   {
-    Icon: List,
-    text: 'Al final de cada área vas a ver un resumen con tus talentos más destacados.',
-  },
-  {
     Icon: SkipForward,
-    text: 'Si un área no te interesa para nada, podés omitirla.',
+    text: 'Si un área no te interesa para nada, podés omitirla y contarnos por qué.',
   },
 ];
 
@@ -41,7 +37,7 @@ function DuelIntro({ onStart }: { onStart: () => void }) {
   return (
     <>
       <Header currentSection={1} />
-      <main className="min-h-screen pt-24 pb-8 px-4">
+      <main className="min-h-screen pt-32 pb-8 px-4">
         <div className="mx-auto max-w-md pt-4 space-y-5">
           <h2 className="text-2xl font-bold text-foreground text-center">
             ¿Cómo funciona esta sección?
@@ -90,7 +86,7 @@ function TalentCard({ role, talent, cardState, onDecide }: TalentCardProps) {
   return (
     <div
       className={[
-        'relative flex flex-1 flex-col items-center justify-center gap-4 rounded-xl border bg-card p-5 text-center transition-all duration-500 min-h-[140px]',
+        'relative flex w-full flex-col items-center justify-center gap-4 rounded-xl border bg-card p-5 text-center transition-all duration-500 min-h-[140px]',
         cardState === 'win'
           ? 'scale-[1.015] border-primary/50 shadow-md'
           : cardState === 'lose'
@@ -134,7 +130,7 @@ function TalentCard({ role, talent, cardState, onDecide }: TalentCardProps) {
 
       {/* Action buttons (challenger only) */}
       {!isFav && (
-        <div className="flex w-full max-w-xs flex-col gap-2">
+        <div className="flex w-full flex-col gap-2">
           <button
             disabled={cardState !== 'idle'}
             onClick={() => onDecide('mas')}
@@ -267,6 +263,85 @@ function SkipModal({
   );
 }
 
+// ── Circular progress ─────────────────────────────────────────
+
+function CircularProgress({
+  value,
+  max,
+  size = 46,
+  stroke = 5,
+}: {
+  value: number;
+  max: number;
+  size?: number;
+  stroke?: number;
+}) {
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const pct = max > 0 ? Math.min(1, value / max) : 0;
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" className="stroke-secondary" strokeWidth={stroke} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          className="stroke-primary"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={c * (1 - pct)}
+          style={{ transition: 'stroke-dashoffset 0.5s ease-out' }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center text-sm font-bold leading-none">
+        {value}
+        <span className="text-muted-foreground font-medium text-[11px]">/{max}</span>
+      </div>
+    </div>
+  );
+}
+
+// ── Area transition modal ──────────────────────────────────────
+
+function AreaTransitionModal({
+  omitted,
+  nextName,
+}: {
+  omitted: boolean;
+  nextName: string;
+}) {
+  return (
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-foreground/20 backdrop-blur-sm px-6">
+      <div
+        className="w-full max-w-[300px] rounded-2xl border border-border bg-card p-7 text-center shadow-xl"
+        style={{ animation: 'duel-pop 0.28s ease-out both' }}
+      >
+        <div
+          className={[
+            'mx-auto mb-3.5 flex h-14 w-14 items-center justify-center rounded-2xl',
+            omitted ? 'bg-secondary text-muted-foreground' : 'bg-primary/10 text-primary',
+          ].join(' ')}
+        >
+          {omitted ? <SkipForward className="h-7 w-7" /> : <Check className="h-7 w-7" strokeWidth={3} />}
+        </div>
+        <h3 className="text-lg font-bold text-foreground">
+          {omitted ? 'Área omitida' : '¡Área completada!'}
+        </h3>
+        <p className="mt-1.5 text-sm text-muted-foreground">Avanzás a la siguiente área</p>
+        <div className="mt-3 border-t border-border pt-3">
+          <div className="text-[10.5px] font-semibold uppercase tracking-widest text-muted-foreground">
+            A continuación
+          </div>
+          <p className="mt-1 text-[15px] font-bold leading-tight text-foreground">{nextName}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────
 
 interface TalentDuelsProps {
@@ -294,7 +369,10 @@ export function TalentDuels({
   const [favoriteSlot, setFavoriteSlot] = useState<'top' | 'bottom'>('top');
   const [choice, setChoice] = useState<'mas' | 'menos' | null>(null);
   const [skipText, setSkipText] = useState('');
+  const [areaTransition, setAreaTransition] =
+    useState<{ omitted: boolean; nextName: string } | null>(null);
   const lock = useRef(false);
+  const prevAreaIndex = useRef(state.currentAreaIndex);
 
   // Reset slot state when a new area starts
   useEffect(() => {
@@ -316,6 +394,21 @@ export function TalentDuels({
   // onNextArea is a stable dispatch wrapper — only re-run when showingLeaderboard changes
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.showingLeaderboard]);
+
+  // Area transition modal
+  useEffect(() => {
+    if (prevAreaIndex.current === state.currentAreaIndex) return;
+    const movedForward = state.currentAreaIndex > prevAreaIndex.current;
+    prevAreaIndex.current = state.currentAreaIndex;
+    if (!movedForward) return;
+    const last = state.areaResults[state.areaResults.length - 1];
+    setAreaTransition({
+      omitted: !!(last && last.skipped),
+      nextName: TALENT_AREAS[state.currentAreaIndex].name,
+    });
+    const t = setTimeout(() => setAreaTransition(null), 1100);
+    return () => clearTimeout(t);
+  }, [state.currentAreaIndex]);
 
   const challenger = state.remainingChallengers[0];
   const challengerSlot: 'top' | 'bottom' = favoriteSlot === 'top' ? 'bottom' : 'top';
@@ -376,77 +469,100 @@ export function TalentDuels({
     />
   );
 
+  const vsBadge = (
+    <div
+      className={[
+        'pointer-events-none shrink-0 mx-auto flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card shadow-sm transition-all duration-300',
+        choice ? 'scale-75 opacity-0' : 'scale-100 opacity-100',
+      ].join(' ')}
+    >
+      <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+        vs
+      </span>
+    </div>
+  );
+
+  const progressWidget = (
+    <div className="flex items-center gap-3.5">
+      <CircularProgress value={state.currentDuelIndex} max={totalDuels} />
+      <div className="flex flex-col gap-0.5">
+        <span className="text-sm font-semibold text-foreground">
+          Área {state.currentAreaIndex + 1}
+          <span className="font-normal text-muted-foreground"> de {TALENT_AREAS.length}</span>
+        </span>
+        <span className="text-xs text-muted-foreground">
+          {state.currentDuelIndex} de {totalDuels} duelos respondidos
+        </span>
+      </div>
+    </div>
+  );
+
+  const skipButton = (fullWidth: boolean) => (
+    <button
+      onClick={onToggleSkipOptions}
+      className={[
+        'flex items-center justify-center gap-2 rounded-lg border border-border bg-secondary px-4 py-2.5 text-sm font-semibold text-secondary-foreground transition-all hover:bg-muted active:scale-[0.98]',
+        fullWidth ? 'w-full' : '',
+      ].join(' ')}
+    >
+      <SkipForward className="w-4 h-4" />
+      Omitir esta área
+    </button>
+  );
+
   return (
     <>
       <Header currentSection={1} />
 
-      <main className="flex flex-col pt-24" style={{ height: '100dvh' }}>
-        <div className="flex flex-1 flex-col min-h-0 mx-auto w-full max-w-md">
-          {/* Area label + prompt */}
+      {/* ── MOBILE LAYOUT (below md) ─────────────────────────────── */}
+      <main className="md:hidden flex flex-col items-center pt-32" style={{ height: '100dvh' }}>
+        <div className="flex flex-1 flex-col min-h-0 mx-auto w-full max-w-[560px]">
+          {/* Area label */}
           <div className="shrink-0 px-4 pt-5 pb-3 text-center">
             <h2 className="text-2xl font-bold text-foreground leading-tight">
               {currentArea.name}
             </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              ¿Qué te interesa más?
-            </p>
           </div>
 
           {/* Duel stack */}
-          <div className="relative flex flex-1 flex-col gap-3 min-h-0 px-4">
+          <div className="flex flex-1 flex-col gap-3 min-h-0 px-4 pb-3.5">
             {favoriteSlot === 'top' ? favCard : chalCard}
-
-            {/* VS badge */}
-            <div
-              className={[
-                'pointer-events-none absolute left-1/2 top-1/2 z-10 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card shadow-sm transition-all duration-300',
-                choice ? 'scale-75 opacity-0' : 'scale-100 opacity-100',
-              ].join(' ')}
-            >
-              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                vs
-              </span>
-            </div>
-
+            {vsBadge}
             {favoriteSlot === 'top' ? chalCard : favCard}
           </div>
 
           {/* Footer: progress + skip */}
-          <div className="shrink-0 flex flex-col gap-3 border-t border-border bg-card px-4 py-4">
-            {/* Combined area + duel progress bar */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-foreground">
-                  Área {state.currentAreaIndex + 1}
-                  <span className="font-normal text-muted-foreground"> de {TALENT_AREAS.length}</span>
-                </span>
-                <span className="text-muted-foreground">
-                  Duelo {state.currentDuelIndex + 1} de {totalDuels}
-                </span>
-              </div>
-              <div className="h-2 rounded-full bg-secondary overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-primary transition-all duration-500 ease-out"
-                  style={{
-                    width: `${((state.currentAreaIndex + (state.currentDuelIndex / totalDuels)) / TALENT_AREAS.length) * 100}%`,
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Skip */}
-            <button
-              onClick={onToggleSkipOptions}
-              className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-secondary px-4 py-2.5 text-sm font-semibold text-secondary-foreground transition-all hover:bg-muted active:scale-[0.98]"
-            >
-              <SkipForward className="w-4 h-4" />
-              Omitir esta área
-            </button>
+          <div className="shrink-0 flex flex-col gap-3 border-t border-border bg-card px-4 py-3">
+            {progressWidget}
+            {skipButton(true)}
           </div>
         </div>
       </main>
 
-      {/* Skip modal — rendered on top of the duel screen */}
+      {/* ── DESKTOP LAYOUT (md and up) ───────────────────────────── */}
+      <div className="hidden md:block">
+        {/* Scrollable content — pb clears the fixed footer */}
+        <div className="pt-32 pb-24 min-h-screen">
+          <div className="mx-auto w-full max-w-[600px] px-4 pt-6 flex flex-col gap-3">
+            <div className="pb-2 text-center">
+              <h2 className="text-2xl font-bold text-foreground leading-tight">
+                {currentArea.name}
+              </h2>
+            </div>
+            {favoriteSlot === 'top' ? favCard : chalCard}
+            {vsBadge}
+            {favoriteSlot === 'top' ? chalCard : favCard}
+          </div>
+        </div>
+
+        {/* Fixed full-width footer */}
+        <div className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-center gap-6 border-t border-border bg-card px-6 py-3">
+          {progressWidget}
+          {skipButton(false)}
+        </div>
+      </div>
+
+      {/* Skip modal */}
       {state.showingSkipOptions && (
         <SkipModal
           selectedReasons={state.selectedSkipReasons}
@@ -456,6 +572,11 @@ export function TalentDuels({
           onConfirm={() => onConfirmSkip(skipText)}
           onCancel={onToggleSkipOptions}
         />
+      )}
+
+      {/* Area transition modal */}
+      {areaTransition && (
+        <AreaTransitionModal omitted={areaTransition.omitted} nextName={areaTransition.nextName} />
       )}
     </>
   );

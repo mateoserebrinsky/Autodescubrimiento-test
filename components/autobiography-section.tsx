@@ -43,7 +43,7 @@ export function AutobiographySection({
   return (
     <>
       <Header currentSection={2} />
-      <main className="min-h-screen pt-24 pb-24 px-4">
+      <main className="min-h-screen pt-32 pb-24 px-4">
         <div className="max-w-[480px] md:max-w-[600px] mx-auto space-y-6">
           {/* Progress indicator */}
           <div className="flex justify-center gap-1.5">

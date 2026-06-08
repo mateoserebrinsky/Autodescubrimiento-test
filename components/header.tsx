@@ -17,15 +17,25 @@ export function Header({ currentSection }: HeaderProps) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-primary transition-all duration-500 ease-out rounded-full"
-              style={{ width: `${(currentSection / 3) * 100}%` }}
-            />
-          </div>
-          <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-            Sección {currentSection} / 3
-          </span>
+          {[1, 2, 3].map((n) => {
+            const stepState =
+              n < currentSection ? 'done' : n === currentSection ? 'current' : 'upcoming';
+            return (
+              <div
+                key={n}
+                className={[
+                  'flex-1 h-[30px] rounded-md flex items-center justify-center text-sm font-bold border transition-colors',
+                  stepState === 'current'
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : stepState === 'done'
+                    ? 'bg-primary/10 text-primary border-primary/30'
+                    : 'bg-secondary text-muted-foreground border-border',
+                ].join(' ')}
+              >
+                {n}
+              </div>
+            );
+          })}
         </div>
       </div>
     </header>

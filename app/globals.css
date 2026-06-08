@@ -93,3 +93,8 @@
     min-height: 100vh;
   }
 }
+
+@keyframes duel-pop {
+  from { transform: scale(0.92); }
+  to { transform: scale(1); }
+}
