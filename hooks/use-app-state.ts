@@ -217,7 +217,11 @@ function reducer(state: AppState, action: Action): AppState {
     case 'DISMISS_INTRO':
       return {
         ...state,
-        section1: { ...state.section1, showingIntro: false },
+        section1: {
+          ...state.section1,
+          ...initializeArea(state.section1.currentAreaIndex),
+          showingIntro: false,
+        },
       };
 
     case 'TOGGLE_SKIP_OPTIONS':
