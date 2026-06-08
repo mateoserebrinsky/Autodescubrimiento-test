@@ -1,7 +1,7 @@
 'use client';
 
 import { useReducer } from 'react';
-import type { AppState, Section, AreaResult, AutobiographyAnswers, ReflectionAnswers, UserInfo } from '@/lib/types';
+import type { AppState, Section, AreaResult, AutobiographyAnswers, ReflectionAnswers, UserInfo, ProgressSnapshot } from '@/lib/types';
 import { TALENT_AREAS } from '@/lib/data';
 
 type Action =
@@ -10,6 +10,7 @@ type Action =
   | { type: 'GO_TO_REGISTRATION' }
   | { type: 'GO_TO_FINISHED' }
   | { type: 'SET_SESSION'; sesionId: number; userInfo: UserInfo }
+  | { type: 'RESTORE_PROGRESS'; sesionId: number; userInfo: UserInfo; snapshot: ProgressSnapshot }
   | { type: 'START_DUEL'; areaIndex: number }
   | { type: 'SELECT_WINNER'; winner: string }
   | { type: 'SHOW_LEADERBOARD' }
@@ -95,6 +96,20 @@ function reducer(state: AppState, action: Action): AppState {
 
     case 'GO_TO_REGISTRATION':
       return { ...state, currentScreen: 'registration' };
+
+    // Rehydrates a session from a previously auto-saved snapshot (progreso_sesion),
+    // so quitting/reloading lands the user exactly where they left off.
+    case 'RESTORE_PROGRESS':
+      return {
+        ...state,
+        sesionId: action.sesionId,
+        userInfo: action.userInfo,
+        currentScreen: action.snapshot.currentScreen,
+        currentSection: action.snapshot.currentSection,
+        section1: action.snapshot.section1,
+        section2: action.snapshot.section2,
+        section3: action.snapshot.section3,
+      };
 
     case 'SET_SESSION':
       return {

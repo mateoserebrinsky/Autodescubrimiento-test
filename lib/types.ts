@@ -51,6 +51,23 @@ export interface ReflectionAnswers {
   certeza: string;
 }
 
+// Subset of AppState that fully describes "where the user is" — enough to
+// restore the test exactly where they left it after quitting/reloading.
+export type ProgressSnapshot = Pick<
+  AppState,
+  'currentScreen' | 'currentSection' | 'section1' | 'section2' | 'section3'
+>;
+
+// Shape returned by GET /api/progreso (row from progreso_sesion, or null if none yet)
+export interface ProgresoRecord {
+  pantallaActual: Screen;
+  seccionActual: Section;
+  porcentajeAvance: number;
+  estado: ProgressSnapshot;
+  iniciadoEn: string;
+  actualizadoEn: string;
+}
+
 export interface AppState {
   currentScreen: Screen;
   currentSection: Section;
