@@ -11,9 +11,9 @@ interface WelcomeScreenProps {
 export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8">
-      <div className="w-full max-w-[480px] md:max-w-[600px] space-y-6">
+      <div className="w-full max-w-120 md:max-w-150 space-y-6">
         <div className="text-center space-y-3">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-2">
+          <div className="inline-flex items-center justify-center w-16 h-5 rounded-2xl bg-primary/10 mb-2">
             <Compass className="w-8 h-8 text-primary" />
           </div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground text-balance">
@@ -28,7 +28,7 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
           <Card className="bg-card shadow-sm">
             <CardHeader className="pb-2">
               <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10">
+                <div className="flex items-center justify-center w-10 h-5 rounded-xl bg-primary/10">
                   <Target className="w-5 h-5 text-primary" />
                 </div>
                 <div>
@@ -42,7 +42,7 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
           <Card className="bg-card shadow-sm">
             <CardHeader className="pb-2">
               <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10">
+                <div className="flex items-center justify-center w-10 h-5 rounded-xl bg-primary/10">
                   <BookOpen className="w-5 h-5 text-primary" />
                 </div>
                 <div>
@@ -56,7 +56,7 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
           <Card className="bg-card shadow-sm">
             <CardHeader className="pb-2">
               <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-accent/10">
+                <div className="flex items-center justify-center w-10 h-5 rounded-xl bg-accent/10">
                   <Sparkles className="w-5 h-5 text-accent" />
                 </div>
                 <div>
@@ -67,14 +67,6 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
             </CardHeader>
           </Card>
         </div>
-
-        <Card className="bg-secondary/50 border-0">
-          <CardContent className="pt-4 pb-4">
-            <p className="text-sm text-muted-foreground text-center">
-              No hay respuestas correctas ni incorrectas. Tomate tu tiempo y sé sincero/a con vos mismo/a.
-            </p>
-          </CardContent>
-        </Card>
 
         <Button 
           onClick={onStart}

@@ -87,10 +87,24 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    overflow: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  html::-webkit-scrollbar {
+    display: none;
+  }
   body {
     /* Fondo sólido y limpio para reducir fatiga visual */
     @apply bg-background text-foreground font-sans;
     min-height: 100vh;
+    overflow: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  body::-webkit-scrollbar {
+    display: none;
   }
 }
 
