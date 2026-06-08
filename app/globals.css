@@ -87,11 +87,6 @@
   * {
     @apply border-border outline-ring/50;
   }
-  html {
-    overflow: hidden;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
   html::-webkit-scrollbar {
     display: none;
   }
